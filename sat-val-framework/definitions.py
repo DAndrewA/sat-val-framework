@@ -43,7 +43,14 @@ class HomogenisedData:
 @dataclass(frozen=True, kw_only=True)
 class CollocationParameters:
     def apply_collocation_subsetting(self, raw_data: RawData) -> RawData:
-        raise NotImplementedError(f"Type {type(self)} does not implement .apply_collocation_subsetting()")
+        raise NotImplementedError(f"Type {type(self)} does not implement .apply_collocation_subsetting(self, raw_data: RawData)")
+
+    def calculate_collocation_criteria(self, raw_data1: RawData, raw_data2: RawData) -> tuple[RawData, RawData]:
+        raise NotImplementedError(f"Type {type(self)} does not implement .calculate_collocation_criteria(self, raw_data1: RawData, raw_data2: RawData)")
+
+    def get_collocation_event(self, raw_data1: RawData, raw_data2: RawData) -> CollocationEvent | Exception:
+        raise NotImplementedError(f"Type {type(self)} does not implement .get_collocation_event(self, raw_data1: RawData, raw_data2: RawData)")
+
 
 
 class CollocationScheme: pass
