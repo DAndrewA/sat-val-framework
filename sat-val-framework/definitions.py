@@ -1,0 +1,55 @@
+"""Creation date: 22/08/2025
+Author: Andrew Martin
+
+Script containing class definitions for the sat-val-framework package
+"""
+
+from __future__ import annotations
+
+from typing import Self, Type
+from dataclasses import dataclass
+from collections import UserList
+
+class RawData:
+    def __init__(self, data, metadata):
+        raise NotImplementedError(f"Type {type(self)} does not implement __init__.")
+
+    @classmethod
+    def from_qualified_file(cls, fpath: str) -> Self:
+        raise NotImplementedError(f"Type {type(self)} does not implement .from_qualfied_file(cls, fpath: str)")
+
+    @classmethod
+    def from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters) -> Self:
+        raise NotImplementedError(f"Type {type(self)} does not implement .from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters)")
+
+    def homogenise_to(self, H: Type[HomogenisedData]) -> H:
+        raise NotImplementedError(f"Type {type(self)} does not implement .homngenise_to(self, H: Type[HomogenisedData])")
+
+
+class HomogenisedData:
+    pass
+
+@dataclass(frozen=True, kw_only=True)
+class CollocationParameters:
+    def apply_collocation_subsetting(self, raw_data: RawData) -> RawData:
+        raise NotImplementedError(f"Type {type(self)} does not implement .apply_collocation_subsetting()")
+
+
+class CollocationScheme: pass
+
+@dataclass(frozen=True, kw_only=True)
+class CollocationEvent:
+    pass
+
+class CollocatedRawData: pass
+
+class CollocatedHomogenisedData: pass
+
+class CollocationEventList(UserList): pass
+
+class CollocatedRawData(UserList): pass
+
+class CollocatedHomogenisedData(UserList): pass
+
+
+
