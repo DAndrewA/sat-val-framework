@@ -7,7 +7,7 @@ Script containing class definitions for the sat-val-framework package
 from __future__ import annotations
 
 from typing import Self, Type
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from collections import UserList
 
 
@@ -62,7 +62,12 @@ class CollocationScheme:
 
 @dataclass(frozen=True, kw_only=True)
 class CollocationEvent:
-    pass
+    def to_dict(self) -> dict:
+        return asdict()
+
+    @classmethod
+    def from_dict(cls, d: dict) -> Self | Exception:
+        return cls(**d)
 
 class CollocatedRawData: pass
 
