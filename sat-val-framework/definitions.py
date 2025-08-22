@@ -10,6 +10,8 @@ from typing import Self, Type
 from dataclasses import dataclass
 from collections import UserList
 
+
+
 class RawData:
     def __init__(self, data, metadata):
         raise NotImplementedError(f"Type {type(self)} does not implement __init__.")
@@ -26,8 +28,17 @@ class RawData:
         raise NotImplementedError(f"Type {type(self)} does not implement .homngenise_to(self, H: Type[HomogenisedData])")
 
 
+
 class HomogenisedData:
-    pass
+    def __init__(self, data, metadata):
+        self.data = data
+        self.metadata = metadata
+        self.assert_on_creation()
+
+    def assert_on_creation(self):
+        raise NotImplementedError("Type {type(self)} does not implement .assert_on_creation(self)")
+
+
 
 @dataclass(frozen=True, kw_only=True)
 class CollocationParameters:
