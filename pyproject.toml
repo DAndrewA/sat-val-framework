@@ -1,0 +1,12 @@
+[project]
+name="sat-val-framework"
+description = "Python package defining classes to be inherited from when implementing a satellite validation study."
+authors = [{name="Andrew Martin"}]
+readme="README.md"
+license = {file = "LICENSE"} # placeholder
+requires-python = ">=3.10" # placeholder
+dependencies = [] # placeholder
+dynamic=["version"]
+
+[tool.setuptools.packages]
+find = {}
