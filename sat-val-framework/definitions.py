@@ -167,9 +167,20 @@ class CollocationEventList(UserList):
 
 
 
-class CollocatedRawData(UserList): pass
+class CollocatedRawDataList(UserList):
+    def __init__(self, data):
+        super().__init__(self, data)
 
-class CollocatedHomogenisedData(UserList): pass
+    @classmethod
+    def from_collocation_event_list_and_parameters(cls, event_list: CollocationEventList, parameters: CollocationParameters) -> Self:
+        assert isinstance(event_list, CollocationEventList), f"{type(event_list)} must be an instance of {CollocationEventList}"
+        assert isinstance(parameters, CollocationParameters), f"{type(parameters)} must be an instance of {CollocationParameters}"
+        new_data = ( # TODO: fix a way that an instance of CollocatedRawDataList knows what subclass of CollocatedRawData (with defined R1 and R2) that it should be loading
+            CollocatedHomogenisedData
+        )
+        
+
+class CollocatedHomogenisedDataList(UserList): pass
 
 
 
