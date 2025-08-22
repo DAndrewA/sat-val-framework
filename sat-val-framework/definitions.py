@@ -53,7 +53,12 @@ class CollocationParameters:
 
 
 
-class CollocationScheme: pass
+class CollocationScheme:
+    @staticmethod
+    def get_matches_from_raw_directories(raw_directory1: str, raw_directory2: str) -> CollocationEventList:
+        raise NotImplementedError(f"Type {type(self)} does not implement .get_matches_from_raw_directories(raw_directory1: str, raw_directory2: str)")
+
+
 
 @dataclass(frozen=True, kw_only=True)
 class CollocationEvent:
