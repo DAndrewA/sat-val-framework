@@ -10,6 +10,9 @@ from typing import Self, Type
 from dataclasses import dataclass, asdict
 from collections import UserList
 
+import os
+import pickle
+
 
 
 class RawData:
@@ -142,7 +145,27 @@ class CollocatedHomogenisedData:
 
 
 
-class CollocationEventList(UserList): pass
+class CollocationEventList(UserList):
+    """Handles a list of collocation events, and saving them to and loading them from files"""
+    def __init__(self, data):
+        super().__init__(self, data)
+        for i,entry in enumerate(data):
+            assert isinstance(entry, CollocationEvent), f"{data[i]=}, of type {type(entry)}, is not an instance of CollocationEvent"
+
+    def to_file(fpath: str):
+        if os.path.exists(fpath):
+            print(f"File already exists at {fpath=}, not saving output")
+        with open(fpath, "wb") as f:
+            pickle.dump(self, fpath)
+
+    @classmethod
+    def from_file(cls, fpath: str) -> Self:
+        with open(fpath, "rb") as f:
+            pickle_ob = pickle.load(f)
+            assert isinstance(pickle_ob, cls), f"Pickle loading instance of type {type(pickle_ob)}, not of required type {cls}"
+        return pickle_ob
+
+
 
 class CollocatedRawData(UserList): pass
 
