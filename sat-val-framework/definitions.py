@@ -34,6 +34,34 @@ class RawData:
 
 
 
+class RawDataPairBaseClass: 
+    """Inherit from this class and RawDataPairMetaclass if the checks in RawDataPairMetaclass.__new__ are to be bypassed."""
+    pass
+
+class RawDataPairMetaclass(type):
+    """Metaclass that validates that class attributes R1 and R2 are set as subclasses of RawData upon class definition"""
+    def __new__(cls, name, bases, namespace):
+        # create the class initially
+        new_class = super().__new__(cls, name, bases, namespace)
+
+        # skip any validation if RawDataPairBaseClass is a direct parent
+        if RawDataPairBaseClass in bases:
+            return new_class
+
+        R1 = getattr(new_class, "R1", None)
+        if not isinstance(R1, type):
+            raise ValueError(f"Class definition for {name} should set {R1=} as a subclass of {RawData}")
+        assert issubclass(R1, RawData), f"Class definition for {name} should set {R1=} as a subclass of {RawData}"
+
+        R2 = getattr(new_class, "R2", None)
+        if not isinstance(R2, type):
+            raise ValueError(f"Class definition for {name} should set {R2=} as a subclass of {RawData}")
+        assert issubclass(R2, RawData), f"Class definition for {name} should set {R2=} as a subclass of {RawData}"
+
+        return new_class
+
+
+
 class HomogenisedData:
     def __init__(self, data, metadata):
         self.data = data
@@ -75,21 +103,24 @@ class CollocationEvent:
         return cls(**d)
 
 
-H = TypeVar('H', bound=HomogenisedData)
-class CollocatedRawData[R1: RawData, R2: RawData]:
-    def __init__(self, raw_data1: R1, raw_data2: R2):
-        assert isinstance(raw_data1, R1), f"{type(raw_data1)=} is not {R1}"
-        assert isinstance(raw_data2, R2), f"{type(raw_data2)=} is not {R2}"
+
+class CollocatedRawData(RawDataPairBaseClass, metaclass=RawDataPairMetaclass):
+    R1 = None
+    R2 = None
+
+    def __init__(self, raw_data1: RawData, raw_data2: RawData):
+        assert isinstance(raw_data1, self.R1), f"{type(raw_data1)=} is not {self.R1=}"
+        assert isinstance(raw_data2, self.R2), f"{type(raw_data2)=} is not {self.R2=}"
         self.raw_data1 = raw_data1
         self.raw_data2 = raw_data2
 
     @classmethod
     def from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters) -> Self:
-        raw_data1 = R1.from_collocation_event_and_parameters(
+        raw_data1 = self.R1.from_collocation_event_and_parameters(
             event = event,
             parameters = parameters
         )
-        raw_data2 = R2.from_collocation_event_and_parameters(
+        raw_data2 = self.R2.from_collocation_event_and_parameters(
             event = event,
             parameters = parameters
         )
