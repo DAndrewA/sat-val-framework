@@ -6,7 +6,7 @@ Script containing class definitions for the sat-val-framework package
 
 from __future__ import annotations
 
-from typing import Self, Type, ClassVar, TypeVar
+from typing import Self, Type
 from dataclasses import dataclass, asdict
 from collections import UserList
 
@@ -133,11 +133,12 @@ class CollocatedRawData(RawDataPairBaseClass, metaclass=RawDataPairMetaclass):
 
 
 
-class CollocatedHomogenisedData[H: HomogenisedData]:
-    def __init__(self, homogenised1: H, homogenised2: H):
-        assert isinstance(homogenised1, H), f"{type(homogenised1)=} is not {H}"
-        assert isinstance(homogenised2, H), f"{type(homogenised2)=} is not {H}"
+class CollocatedHomogenisedData:
+    def __init__(self, homogenised1: HomogenisedData, homogenised2: HomogenisedData):
+        assert isinstance(homogenised1, HomogenisedData), f"{type(homogenised1)=} is not instance of {HomogenisedData}"
+        assert isinstance(homogenised2, HomogenisedData), f"{type(homogenised2)=} is not instance of {HomogenisedData}"
         self.homogenised1 = homogenised1
+        self.homogenised2 = homogenised2
 
 
 
