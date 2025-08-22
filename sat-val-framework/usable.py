@@ -4,6 +4,17 @@ Creation date: 22/08/2025
 Class definitions that can be used without modification in the validation process.
 """
 
+from __future__ import annotations
+
+from .implement import CollocationEvent, CollocationParameters, CollocatedRawData, CollocatedHomogenisedData, HomogenisedData
+
+from typing import Self
+from collections import UserList
+
+import os
+import pickle
+
+
 
 class CollocationEventList(UserList):
     """Handles a list of collocation events, and saving them to and loading them from files"""
