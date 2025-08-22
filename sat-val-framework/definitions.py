@@ -180,7 +180,14 @@ class CollocatedRawDataList(UserList):
         )
         
 
-class CollocatedHomogenisedDataList(UserList): pass
-
+class CollocatedHomogenisedDataList(UserList):
+    def __init__(self, data):
+        super().__init__(self, data)
+        for i, value in enumerate(data):
+            assert isinstance(i, HomogenisedData), f"{data[i]=} should be subclass of HomogenisedData, is of type {type(data)}"
+        
+    @property
+    def events(self):
+        return self.data
 
 
