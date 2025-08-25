@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import Self, Type
 from dataclasses import dataclass, asdict
-from collections import UserList
 
 import os
 import pickle
