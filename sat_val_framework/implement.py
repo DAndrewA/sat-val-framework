@@ -19,6 +19,7 @@ class RawData:
         self.data = data
         self.metadata = metadata
         self.assert_on_creation()
+        self.perform_qc()
 
     def assert_on_creation(self) -> None | Exception:
         raise AssertionError(f"Type {type(self)} does not implement .assert_on_creation()")
@@ -30,6 +31,9 @@ class RawData:
     @classmethod
     def from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters) -> Self:
         raise NotImplementedError(f"Type {type(self)} does not implement .from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters)")
+
+    def perform_qc(self) -> Self:
+        raise NotImplementedError(f"Type {type(self)} does not implement .perform_qc(self)")
 
     def homogenise_to(self, H: Type[HomogenisedData]) -> H:
         raise NotImplementedError(f"Type {type(self)} does not implement .homngenise_to(self, H: Type[HomogenisedData])")
