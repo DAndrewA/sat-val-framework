@@ -6,7 +6,13 @@ Class definitions that can be used without modification in the validation proces
 
 from __future__ import annotations
 
-from .implement import CollocationEvent, CollocationParameters, CollocatedRawData, CollocatedHomogenisedData, HomogenisedData
+from .implement import (
+    CollocationEvent, 
+    JointParameters, 
+    CollocatedRawData, 
+    CollocatedHomogenisedData, 
+    HomogenisedData,
+)
 
 from typing import Self
 from collections import UserList
@@ -19,9 +25,28 @@ import pickle
 class CollocationEventList(UserList):
     """Handles a list of collocation events, and saving them to and loading them from files"""
     def __init__(self, data):
+        # assert all elements in the list are CollocationEvent instances
+        assert all((
+            isinstance(element, CollocationEvent)
+            for element in data
+        )), f"All entries should be of type {CollocationEvent}"
+        
+        # assert all CollocationEvent instances have the same RawData types as keys
+        RDT_KEYS0 = set(data[0].events.keys())
+        assert all((
+            set(event.events.keys()) == RDT_KEYS0
+            for event in data
+        )), f"All events should have the same RawData type keys, event[0].RDTs={RDT_KEYS0}" 
         super().__init__(self, data)
-        for i,entry in enumerate(data):
-            assert isinstance(entry, CollocationEvent), f"{data[i]=}, of type {type(entry)}, is not an instance of CollocationEvent"
+
+
+    def load_with_joint_parameters(self, joint_params: JointParameters) -> CollocatedRawDataList:
+        #TODO: implement safety into these methods
+        return CollocatedRawDataList((
+            collocation_event.load_with_join_parameters(joint_params)
+            for collocation_event in self.data
+        ))
+
 
     def to_file(fpath: str):
         if os.path.exists(fpath):
@@ -40,15 +65,17 @@ class CollocationEventList(UserList):
 
 class CollocatedRawDataList(UserList):
     def __init__(self, data):
+        assert all((
+            isinstance(collocated_raw_data, CollocatedRawData)
+            for collocated_raw_data in data
+        )), f"All elements should be [CollocatedRawData]"
         super().__init__(self, data)
 
-    @classmethod
-    def from_collocation_event_list_and_parameters(cls, event_list: CollocationEventList, parameters: CollocationParameters) -> Self:
-        assert isinstance(event_list, CollocationEventList), f"{type(event_list)} must be an instance of {CollocationEventList}"
-        assert isinstance(parameters, CollocationParameters), f"{type(parameters)} must be an instance of {CollocationParameters}"
-        new_data = ( # TODO: fix a way that an instance of CollocatedRawDataList knows what subclass of CollocatedRawData (with defined R1 and R2) that it should be loading
-            CollocatedHomogenisedData
-        )
+    def homogenise_to(self, H: Type[HomogenisedData]) -> CollocatedHomogenisedDataList:
+        return CollocatedHomogenisedDataList((
+            collocated_raw_data.homogenise_to(H)
+            for collocated_raw_data in self.data
+        ))
         
 
 class CollocatedHomogenisedDataList(UserList):

@@ -6,24 +6,42 @@ Script containing class definitions for the sat-val-framework package
 
 from __future__ import annotations
 
-from typing import Self, Type
+from typing import Self, Type, ClassVar
 from dataclasses import dataclass, asdict
+from collections import UserDict
 
 import os
 import pickle
 
 
-@dataclass(kw_only=True)
-class RawMetadata:
-    """Class handling metadata for RawData classes"""
-    loader: str | CollocationEvent
-    subsetter: list[RawDataSubsetter]
+
+@dataclass(kw_only=True, frozen=True)
+class RawDataEvent:
+    """Class that should be implemented with all fields sufficient to load raw data with no subsetting or further information.
+    """
+    # identifies the RawData type the class is associated with
+    RDT: ClassVar[Type[RawData]] = None
+    pass
+
+
 
 @dataclass(kw_only=True, frozen=True)
 class RawDataSubsetter:
     """Class that handles collocation subsetting based on a parametrisation"""
+    # identifies the RawData type the class is associated with
+    RDT: ClassVar[Type[RawData]] = None
+
     def subset(self, raw_data: RawData) -> RawData:
         raise NotImplementedError(f"{type(self)} does not implement subset method")
+
+
+
+@dataclass(kw_only=True)
+class RawMetadata:
+    """Class handling metadata for RawData classes"""
+    loader: str | RawDataEvent
+    subsetter: list[RawDataSubsetter]
+
 
 
 class RawData:
@@ -32,7 +50,7 @@ class RawData:
     METHODS:
         assert_on_creation(self) -> None | AssertionError
         @classmethod from_qualified_file(cls, fpath: str) -> Self
-        @classmethod from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: RawDataSubsetter) -> Self
+        @classmethod from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: RawDataSubsetter) -> Self
         perform_qc(self) -> Self
         homogenise_to(self, H: Type[HomogenisedData]) -> H
     """
@@ -51,8 +69,8 @@ class RawData:
         raise NotImplementedError(f"Type {type(self)} does not implement .from_qualfied_file(cls, fpath: str)")
 
     @classmethod
-    def from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters) -> Self:
-        raise NotImplementedError(f"Type {type(self)} does not implement .from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters)")
+    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Self:
+        raise NotImplementedError(f"Type {type(self)} does not implement .from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters)")
 
     def perform_qc(self) -> Self:
         raise NotImplementedError(f"Type {type(self)} does not implement .perform_qc(self)")
@@ -73,47 +91,6 @@ class HomogenisedData:
 
 
 
-class RawDataPairBaseClass: 
-    """Inherit from this class and RawDataPairMetaclass if the checks in RawDataPairMetaclass.__new__ are to be bypassed."""
-    pass
-
-class RawDataPairMetaclass(type):
-    """Metaclass that validates that class attributes R1 and R2 are set as subclasses of RawData upon class definition"""
-    def __new__(cls, name, bases, namespace):
-        # create the class initially
-        new_class = super().__new__(cls, name, bases, namespace)
-
-        # skip any validation if RawDataPairBaseClass is a direct parent
-        if RawDataPairBaseClass in bases:
-            return new_class
-
-        R1 = getattr(new_class, "R1", None)
-        if not isinstance(R1, type):
-            raise ValueError(f"Class definition for {name} should set {R1=} as a subclass of {RawData}")
-        assert issubclass(R1, RawData), f"Class definition for {name} should set {R1=} as a subclass of {RawData}"
-
-        R2 = getattr(new_class, "R2", None)
-        if not isinstance(R2, type):
-            raise ValueError(f"Class definition for {name} should set {R2=} as a subclass of {RawData}")
-        assert issubclass(R2, RawData), f"Class definition for {name} should set {R2=} as a subclass of {RawData}"
-
-        return new_class
-
-
-
-@dataclass(frozen=True, kw_only=True)
-class CollocationParameters:
-    def apply_collocation_subsetting(self, raw_data: RawData) -> RawData:
-        raise NotImplementedError(f"Type {type(self)} does not implement .apply_collocation_subsetting(self, raw_data: RawData)")
-
-    def calculate_collocation_criteria(self, raw_data1: RawData, raw_data2: RawData) -> tuple[RawData, RawData]:
-        raise NotImplementedError(f"Type {type(self)} does not implement .calculate_collocation_criteria(self, raw_data1: RawData, raw_data2: RawData)")
-
-    def get_collocation_event(self, raw_data1: RawData, raw_data2: RawData) -> CollocationEvent | Exception:
-        raise NotImplementedError(f"Type {type(self)} does not implement .get_collocation_event(self, raw_data1: RawData, raw_data2: RawData)")
-
-
-
 class CollocationScheme:
     @staticmethod
     def get_matches_from_raw_directories(raw_directory1: str, raw_directory2: str) -> CollocationEventList:
@@ -121,49 +98,73 @@ class CollocationScheme:
 
 
 
-@dataclass(frozen=True, kw_only=True)
-class CollocationEvent:
-    def to_dict(self) -> dict:
-        return asdict()
+@dataclass(kw_only=True, frozen=True)
+class JointParameters(UserDict):
+    """Class that handles RawDataSubsetter instances per RawData type in the analysis"""
+    RAW_DATA_TYPES = tuple()
 
-    @classmethod
-    def from_dict(cls, d: dict) -> Self | Exception:
-        return cls(**d)
+    def __init__(self, data: dict[Type[RawData], RawDataSubsetter]):
+        assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys contain different RawData types to {self.RawDataTypes}"
+        assert all((
+            params.RDT == RDT
+            for RDT, params in data.items()
+        )), f"All RawDataSubsetter parameters types must match the RawData type they are associated with. {[(RDT, params.RDT) for RDT, params in data.items()]=}"
+        super().__init__(self, data)
 
 
 
-class CollocatedRawData(RawDataPairBaseClass, metaclass=RawDataPairMetaclass):
-    R1 = None
-    R2 = None
+class CollocationEvent(UserDict):
+    def __init__(self, data: dict[Type[RawData], RawDataEvent]):
+        assert all((
+            issubclass(RDT, RawData) & isinstance(event, RawDataEvent)
+            for RDT, event in data.items() 
+        )), f"All keys must be Type[{RawData}] and all values must be {RawDataEvent}"
+        assert all((
+            event.RDT == RDT
+            for RDT, event in data.items()
+        )), f"All RawDataEvent event types must match the associated RawData type keys. {[(RDT, event.RDT) for RDT, event in data.items()]=}"
+        super().__init__(self, data)
 
-    def __init__(self, raw_data1: RawData, raw_data2: RawData):
-        assert isinstance(raw_data1, self.R1), f"{type(raw_data1)=} is not {self.R1=}"
-        assert isinstance(raw_data2, self.R2), f"{type(raw_data2)=} is not {self.R2=}"
-        self.raw_data1 = raw_data1
-        self.raw_data2 = raw_data2
+    @property
+    def events(self): return self.data
 
-    @classmethod
-    def from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: CollocationParameters) -> Self:
-        raw_data1 = self.R1.from_collocation_event_and_parameters(
-            event = event,
-            parameters = parameters
+    def load_with_joint_parameters(self, joint_params: JointParameters) -> CollocatedRawData:
+        raw_datas = {
+            RDT: RDT.from_event_and_parameters(
+                event = event,
+                parameters = joint_params[RDT]
+            )
+            for RDT, event in self.data.items()
+        }
+        return CollocatedRawData(
+            data = raw_datas
         )
-        raw_data2 = self.R2.from_collocation_event_and_parameters(
-            event = event,
-            parameters = parameters
-        )
-        return cls(raw_data1=raw_data1, raw_data2=raw_data2)
-
-    def homogenise_to(self, H: H) -> H:
-        homogenised1 = self.raw_data1.homogenise_to(H)
-        homogenised2 = self.raw_data2.homogenise_to(H)
-        return CollocatedHomogenisedData[H](homogenised1, homogenised2)
 
 
+class CollocatedRawData(UserDict):
+    def __init__(self, data: dict[Type[RawData], RawData]):
+        assert all((
+            issubclass(RDT, RawData) & isinstance(raw_data, RawData)
+            for RDT, raw_data in data.items()
+        )), f"All keys must be Type[{RawData}] and all values must be {RawData}"
+        super().__init__(self, data)
 
-class CollocatedHomogenisedData:
-    def __init__(self, homogenised1: HomogenisedData, homogenised2: HomogenisedData):
-        assert isinstance(homogenised1, HomogenisedData), f"{type(homogenised1)=} is not instance of {HomogenisedData}"
-        assert isinstance(homogenised2, HomogenisedData), f"{type(homogenised2)=} is not instance of {HomogenisedData}"
-        self.homogenised1 = homogenised1
-        self.homogenised2 = homogenised2
+    def homogenise_to(self, H: Type[HomogenisedData]) -> CollocatedHomogenisedData:
+        homogenised_datas = {
+            RDT: raw_data.homogenise_to(H)
+            for RDT, raw_data in self.data.items()
+        }
+        return CollocatedHomogenisedData(H, homogenised_datas)
+
+
+
+class CollocatedHomogenisedData(UserDict):
+    def __init__(self, H: Type[HomogenisedData], data: dict[Type[RawData], HomogenisedData]):
+        assert issubclass(H, HomogenisedData), f"Cannot create CollocatedHomogenisedData holding {H} that is not a subclass of HomogenisedData"
+        assert all((
+            issubclass(RDT, RawData) & isinstance(homogenised_data, H)
+            for RDT, homogenised_data in data.items()
+        )), f"All keys must be Type[{RawData}] and all values must be {H}"
+        
+        super().__init__(self, data)
+        self.H = H
