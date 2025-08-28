@@ -13,9 +13,31 @@ import os
 import pickle
 
 
+@dataclass(kw_only=True)
+class RawMetadata:
+    """Class handling metadata for RawData classes"""
+    loader: str | CollocationEvent
+    subsetter: list[RawDataSubsetter]
+
+@dataclass(frozen=True)
+class RawDataSubsetter:
+    """Class that handles collocation subsetting based on a parametrisation"""
+    def subset(self, raw_data: RawData) -> RawData:
+        raise NotImplementedError(f"{type(self)} does not implement subset method")
+
 
 class RawData:
-    def __init__(self, data, metadata):
+    """Class to handle raw data from an arbitrary source.
+
+    METHODS:
+        assert_on_creation(self) -> None | AssertionError
+        @classmethod from_qualified_file(cls, fpath: str) -> Self
+        @classmethod from_collocation_event_and_parameters(cls, event: CollocationEvent, parameters: RawDataSubsetter) -> Self
+        perform_qc(self) -> Self
+        homogenise_to(self, H: Type[HomogenisedData]) -> H
+    """
+
+    def __init__(self, data, metadata: RawMetadata):
         self.data = data
         self.metadata = metadata
         self.assert_on_creation()
