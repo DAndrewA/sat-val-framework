@@ -107,8 +107,10 @@ class JointParameters(UserDict):
         assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys contain different RawData types to {self.RawDataTypes}"
         assert all((
             params.RDT == RDT
+            if isinstance(params, RawDataSubsetter) # allows use of no subsetting parameters when loading
+            else params is None
             for RDT, params in data.items()
-        )), f"All RawDataSubsetter parameters types must match the RawData type they are associated with. {[(RDT, params.RDT) for RDT, params in data.items()]=}"
+        )), f"All RawDataSubsetter parameters types must match the RawData type they are associated with, or be None. {[(RDT, params.RDT) for RDT, params in data.items()]=}"
         super().__init__(self, data)
 
 
