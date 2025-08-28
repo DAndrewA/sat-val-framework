@@ -19,7 +19,7 @@ class RawMetadata:
     loader: str | CollocationEvent
     subsetter: list[RawDataSubsetter]
 
-@dataclass(frozen=True)
+@dataclass(kw_only=True, frozen=True)
 class RawDataSubsetter:
     """Class that handles collocation subsetting based on a parametrisation"""
     def subset(self, raw_data: RawData) -> RawData:
