@@ -98,10 +98,9 @@ class CollocationScheme:
 
 
 
-@dataclass(kw_only=True, frozen=True)
 class JointParameters(UserDict):
     """Class that handles RawDataSubsetter instances per RawData type in the analysis"""
-    RAW_DATA_TYPES = tuple()
+    RAW_DATA_TYPES: tuple[RawData] = tuple()
 
     def __init__(self, data: dict[Type[RawData], RawDataSubsetter]):
         assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys contain different RawData types to {self.RawDataTypes}"
@@ -111,7 +110,7 @@ class JointParameters(UserDict):
             else params is None
             for RDT, params in data.items()
         )), f"All RawDataSubsetter parameters types must match the RawData type they are associated with, or be None. {[(RDT, params.RDT) for RDT, params in data.items()]=}"
-        super().__init__(self, data)
+        super().__init__(data)
 
 
 
@@ -125,14 +124,14 @@ class CollocationEvent(UserDict):
             event.RDT == RDT
             for RDT, event in data.items()
         )), f"All RawDataEvent event types must match the associated RawData type keys. {[(RDT, event.RDT) for RDT, event in data.items()]=}"
-        super().__init__(self, data)
+        super().__init__(data)
 
     @property
     def events(self): return self.data
 
     def load_with_joint_parameters(self, joint_params: JointParameters) -> CollocatedRawData:
         raw_datas = {
-            RDT: RDT.from_event_and_parameters(
+            RDT: RDT.from_collocation_event_and_parameters(
                 event = event,
                 parameters = joint_params[RDT]
             )
@@ -149,7 +148,7 @@ class CollocatedRawData(UserDict):
             issubclass(RDT, RawData) & isinstance(raw_data, RawData)
             for RDT, raw_data in data.items()
         )), f"All keys must be Type[{RawData}] and all values must be {RawData}"
-        super().__init__(self, data)
+        super().__init__(data)
 
     def homogenise_to(self, H: Type[HomogenisedData]) -> CollocatedHomogenisedData:
         homogenised_datas = {
@@ -168,5 +167,5 @@ class CollocatedHomogenisedData(UserDict):
             for RDT, homogenised_data in data.items()
         )), f"All keys must be Type[{RawData}] and all values must be {H}"
         
-        super().__init__(self, data)
+        super().__init__(data)
         self.H = H

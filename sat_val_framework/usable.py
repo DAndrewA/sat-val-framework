@@ -37,7 +37,7 @@ class CollocationEventList(UserList):
             set(event.events.keys()) == RDT_KEYS0
             for event in data
         )), f"All events should have the same RawData type keys, event[0].RDTs={RDT_KEYS0}" 
-        super().__init__(self, data)
+        super().__init__(data)
 
 
     def load_with_joint_parameters(self, joint_params: JointParameters) -> CollocatedRawDataList:
@@ -48,11 +48,11 @@ class CollocationEventList(UserList):
         ))
 
 
-    def to_file(fpath: str):
+    def to_file(self, fpath: str):
         if os.path.exists(fpath):
             print(f"File already exists at {fpath=}, not saving output")
         with open(fpath, "wb") as f:
-            pickle.dump(self, fpath)
+            pickle.dump(self, f)
 
     @classmethod
     def from_file(cls, fpath: str) -> Self:
@@ -69,7 +69,7 @@ class CollocatedRawDataList(UserList):
             isinstance(collocated_raw_data, CollocatedRawData)
             for collocated_raw_data in data
         )), f"All elements should be [CollocatedRawData]"
-        super().__init__(self, data)
+        super().__init__(data)
 
     def homogenise_to(self, H: Type[HomogenisedData]) -> CollocatedHomogenisedDataList:
         return CollocatedHomogenisedDataList((
@@ -80,7 +80,7 @@ class CollocatedRawDataList(UserList):
 
 class CollocatedHomogenisedDataList(UserList):
     def __init__(self, data):
-        super().__init__(self, data)
+        super().__init__(data)
         for i, value in enumerate(data):
             assert isinstance(i, HomogenisedData), f"{data[i]=} should be subclass of HomogenisedData, is of type {type(data)}"
         
