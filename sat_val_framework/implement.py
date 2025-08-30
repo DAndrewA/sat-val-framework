@@ -75,6 +75,10 @@ class RawData:
     def perform_qc(self) -> Self:
         raise NotImplementedError(f"Type {type(self)} does not implement .perform_qc(self)")
 
+    @property
+    def n_profiles(self) -> int:
+        raise NotImplementedError(f"Type {type(self)} does not implement .n_profiles property")
+
     def homogenise_to(self, H: Type[HomogenisedData]) -> H:
         raise NotImplementedError(f"Type {type(self)} does not implement .homngenise_to(self, H: Type[HomogenisedData])")
 
