@@ -1,6 +1,10 @@
 # data files
 *.h5
 
+# harmony job id hashes and urls
+**/download_atl09/harmony-job-ids
+**/download_atl09/urls_by_id/urls-*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
