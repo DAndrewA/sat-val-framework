@@ -2,6 +2,9 @@
 *.h5
 *.geojson
 
+# test files
+_test*.py
+
 # harmony job id hashes and urls
 harmony-job-ids
 urls-*
