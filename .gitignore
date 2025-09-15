@@ -10,6 +10,10 @@ harmony-job-ids
 urls*
 download-*
 
+# submission and resubmission scripts
+submit*
+resubmit*
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
