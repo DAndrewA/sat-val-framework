@@ -14,6 +14,9 @@ download-*
 submit*
 resubmit*
 
+# figures folder in examples by default (force additions to figures directory)
+figures
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
