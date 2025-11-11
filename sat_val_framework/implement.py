@@ -154,6 +154,20 @@ class CollocatedRawData(UserDict):
         )), f"All keys must be Type[{RawData}] and all values must be {RawData}"
         super().__init__(data)
 
+    def subset(self, joint_parameters: JointParameters) -> Self:
+        # TODO: Raw Data Type checks on the JointParameters and Self
+        subset_raw_data = {
+            RDT: (
+                subsetter.subset(raw_data)
+                if (subsetter := joint_parameters[RDT]) is not None
+                else raw_data
+            )
+            for RDT, raw_data in self.data.items()
+        }
+        return type(self)(
+            data = subset_raw_data
+        )
+
     def homogenise_to(self, H: Type[HomogenisedData]) -> CollocatedHomogenisedData:
         homogenised_datas = {
             RDT: raw_data.homogenise_to(H)
