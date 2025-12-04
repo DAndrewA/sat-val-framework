@@ -25,7 +25,7 @@ __pycache__/
 
 local_tests
 
-*.bak # backup files
+*.bak 
 
 # C extensions
 *.so
