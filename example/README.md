@@ -1,3 +1,6 @@
+**NOTE: This folder is redundant and will receive no consistent further updates. The directory was migrated to (https://github.com/DAndrewA/a-guide-to-optimised-spatiotemporal-data-co-location-by-mutual-information-maximisation)** 
+
+
 # Example: ATL09 and Cloudnet data
 
 The code in this repository will demonstrate the use of the satellite validation pipeline code, as well as the framework outlined in "A guide to optimised spatiotemporal data co-location by mutual information maximisation".
