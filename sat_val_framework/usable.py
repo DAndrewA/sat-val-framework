@@ -14,7 +14,7 @@ from .implement import (
     HomogenisedData,
 )
 
-from typing import Self
+from typing import Self, Type
 from collections import UserList
 
 import os

@@ -20,7 +20,7 @@ class RawDataEvent:
     """Class that should be implemented with all fields sufficient to load raw data with no subsetting or further information.
     """
     # identifies the RawData type the class is associated with
-    RDT: ClassVar[Type[RawData]] = None
+    RDT: ClassVar[Type[RawData]] 
     pass
 
 
@@ -29,7 +29,7 @@ class RawDataEvent:
 class RawDataSubsetter:
     """Class that handles collocation subsetting based on a parametrisation"""
     # identifies the RawData type the class is associated with
-    RDT: ClassVar[Type[RawData]] = None
+    RDT: ClassVar[Type[RawData]] 
 
     def subset(self, raw_data: RawData) -> Optional[RawData]:
         raise NotImplementedError(f"{type(self)} does not implement subset method")
@@ -66,11 +66,11 @@ class RawData:
 
     @classmethod
     def from_qualified_file(cls, fpath: str) -> Optional[Self]:
-        raise NotImplementedError(f"Type {type(self)} does not implement .from_qualfied_file(cls, fpath: str)")
+        raise NotImplementedError(f"Type {cls} does not implement .from_qualfied_file(cls, fpath: str)")
 
     @classmethod
     def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Optional[Self]:
-        raise NotImplementedError(f"Type {type(self)} does not implement .from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters)")
+        raise NotImplementedError(f"Type {cls} does not implement .from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters)")
 
     def perform_qc(self) -> Self:
         raise NotImplementedError(f"Type {type(self)} does not implement .perform_qc(self)")
@@ -96,22 +96,22 @@ class HomogenisedData:
 
 
 class CollocationScheme:
-    @staticmethod
-    def get_matches_from_raw_directories(raw_directory1: str, raw_directory2: str) -> CollocationEventList:
-        raise NotImplementedError(f"Type {type(self)} does not implement .get_matches_from_raw_directories(raw_directory1: str, raw_directory2: str)")
+    @classmethod
+    def get_matches_from_raw_directories(cls, raw_directory1: str, raw_directory2: str) -> CollocationEventList:
+        raise NotImplementedError(f"Type {cls} does not implement .get_matches_from_raw_directories(raw_directory1: str, raw_directory2: str)")
 
 
 
 class JointParameters(UserDict):
     """Class that handles RawDataSubsetter instances per RawData type in the analysis"""
-    RAW_DATA_TYPES: tuple[RawData] = tuple()
+    RAW_DATA_TYPES: tuple[RawData]
 
     def __init__(self, data: dict[Type[RawData], RawDataSubsetter]):
         assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys contain different RawData types to {self.RawDataTypes}"
         for RDT, params in data.items():
             if isinstance(params, RawDataSubsetter):
                 assert params.RDT == RDT, ValueError(f"For key={RDT} in data, {params.RDT=} does not match.")
-            else
+            else:
                 assert params is None, ValueError(f"For key={RDT} in data, params must be of type None or {RawDataSubsetter} with correctly set RDT field.")
         super().__init__(data)
 
@@ -120,8 +120,8 @@ class JointParameters(UserDict):
 class CollocationEvent(UserDict):
     def __init__(self, data: dict[Type[RawData], RawDataEvent]):
         for RDT, event in data.items():
-            assert issubclass(RDT, raw_data), TypeError(f"Key={RDT} in data is not a subclass of {RawData}.")
-            assert isinstance(event, RawDataEvent), TypeError(f"Data supplied for key {RDT} is of type {type(raw_data)}, should be a subclass of {RDT}.")
+            assert issubclass(RDT, RawData), TypeError(f"Key={RDT} in data is not a subclass of {RawData}.")
+            assert isinstance(event, RawDataEvent), TypeError(f"Data supplied for key {RDT} is of type {type(event)}, should be a subclass of {RawDataEvent}.")
             assert event.RDT == RDT, ValueError(f"{event.RDT=} must match the {RDT=}")
         super().__init__(data)
 
