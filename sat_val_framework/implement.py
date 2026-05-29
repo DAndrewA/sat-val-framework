@@ -6,7 +6,7 @@ Script containing class definitions for the sat-val-framework package
 
 from __future__ import annotations
 
-from typing import Self, Type, ClassVar
+from typing import Self, Type, ClassVar, Optional
 from dataclasses import dataclass, asdict
 from collections import UserDict
 
@@ -31,7 +31,7 @@ class RawDataSubsetter:
     # identifies the RawData type the class is associated with
     RDT: ClassVar[Type[RawData]] = None
 
-    def subset(self, raw_data: RawData) -> RawData:
+    def subset(self, raw_data: RawData) -> Optional[RawData]:
         raise NotImplementedError(f"{type(self)} does not implement subset method")
 
 
@@ -65,11 +65,11 @@ class RawData:
         raise AssertionError(f"Type {type(self)} does not implement .assert_on_creation()")
 
     @classmethod
-    def from_qualified_file(cls, fpath: str) -> Self:
+    def from_qualified_file(cls, fpath: str) -> Optional[Self]:
         raise NotImplementedError(f"Type {type(self)} does not implement .from_qualfied_file(cls, fpath: str)")
 
     @classmethod
-    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Self:
+    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Optional[Self]:
         raise NotImplementedError(f"Type {type(self)} does not implement .from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters)")
 
     def perform_qc(self) -> Self:
@@ -108,32 +108,27 @@ class JointParameters(UserDict):
 
     def __init__(self, data: dict[Type[RawData], RawDataSubsetter]):
         assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys contain different RawData types to {self.RawDataTypes}"
-        assert all((
-            params.RDT == RDT
-            if isinstance(params, RawDataSubsetter) # allows use of no subsetting parameters when loading
-            else params is None
-            for RDT, params in data.items()
-        )), f"All RawDataSubsetter parameters types must match the RawData type they are associated with, or be None. {[(RDT, params.RDT) for RDT, params in data.items()]=}"
+        for RDT, params in data.items():
+            if isinstance(params, RawDataSubsetter):
+                assert params.RDT == RDT, ValueError(f"For key={RDT} in data, {params.RDT=} does not match.")
+            else
+                assert params is None, ValueError(f"For key={RDT} in data, params must be of type None or {RawDataSubsetter} with correctly set RDT field.")
         super().__init__(data)
 
 
 
 class CollocationEvent(UserDict):
     def __init__(self, data: dict[Type[RawData], RawDataEvent]):
-        assert all((
-            issubclass(RDT, RawData) & isinstance(event, RawDataEvent)
-            for RDT, event in data.items() 
-        )), f"All keys must be Type[{RawData}] and all values must be {RawDataEvent}"
-        assert all((
-            event.RDT == RDT
-            for RDT, event in data.items()
-        )), f"All RawDataEvent event types must match the associated RawData type keys. {[(RDT, event.RDT) for RDT, event in data.items()]=}"
+        for RDT, event in data.items():
+            assert issubclass(RDT, raw_data), TypeError(f"Key={RDT} in data is not a subclass of {RawData}.")
+            assert isinstance(event, RawDataEvent), TypeError(f"Data supplied for key {RDT} is of type {type(raw_data)}, should be a subclass of {RDT}.")
+            assert event.RDT == RDT, ValueError(f"{event.RDT=} must match the {RDT=}")
         super().__init__(data)
 
     @property
     def events(self): return self.data
 
-    def load_with_joint_parameters(self, joint_params: JointParameters) -> CollocatedRawData:
+    def load_with_joint_parameters(self, joint_params: JointParameters) -> Optional[CollocatedRawData]:
         raw_datas = {
             RDT: RDT.from_collocation_event_and_parameters(
                 event = event,
@@ -141,6 +136,9 @@ class CollocationEvent(UserDict):
             )
             for RDT, event in self.data.items()
         }
+        for raw_data in raw_datas.values():
+            if raw_data is None:
+                return None
         return CollocatedRawData(
             data = raw_datas
         )
@@ -148,13 +146,12 @@ class CollocationEvent(UserDict):
 
 class CollocatedRawData(UserDict):
     def __init__(self, data: dict[Type[RawData], RawData]):
-        assert all((
-            issubclass(RDT, RawData) & isinstance(raw_data, RawData)
-            for RDT, raw_data in data.items()
-        )), f"All keys must be Type[{RawData}] and all values must be {RawData}"
+        for RDT, raw_data in data.items():
+            assert issubclass(RDT, RawData), TypeError(f"Key={RDT} in data is not a subclass of {RawData}.")
+            assert isinstance(raw_data, RDT), TypeError(f"Data supplied for key {RDT} is of type {type(raw_data)}, should be a subclass of {RDT}.")
         super().__init__(data)
 
-    def subset(self, joint_parameters: JointParameters) -> Self:
+    def subset(self, joint_parameters: JointParameters) -> Optional[Self]:
         # TODO: Raw Data Type checks on the JointParameters and Self
         subset_raw_data = {
             RDT: (
@@ -164,6 +161,9 @@ class CollocatedRawData(UserDict):
             )
             for RDT, raw_data in self.data.items()
         }
+        for raw_data in subset_raw_data.values():
+            if raw_data is None:
+                return None
         return type(self)(
             data = subset_raw_data
         )
