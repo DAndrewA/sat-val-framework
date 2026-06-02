@@ -6,13 +6,56 @@ Script containing class definitions for the sat-val-framework package
 
 from __future__ import annotations
 
-from typing import Self, Type, ClassVar, Optional
+from typing import Self, Type, ClassVar, Optional, Callable, Union, Any
+from functools import wraps
 from dataclasses import dataclass, asdict
 from collections import UserDict
 
 import os
 import pickle
 
+
+class InvalidSubsetError(ValueError):
+    pass
+type LoadingErrors = FileNotFoundError | InvalidSubsetError
+type Result = Union
+
+
+def return_caught_errors(*types_list: list[Type], unpack_assertion_error: bool = True, check_assertion_error_type: bool=True):
+    """A function wrapper that catches specified error types and returns them as values instead.
+
+    INPUTS:
+        *types_list: list[Type]:
+            Exception subclasses that should be caught and returned. Raised exceptions that are not subclasses of any value in types_list will still be raised.
+
+        unpack_assertion_error: bool
+            If True, and AssertionError is not present in types_list, AssertionError instances will be caught and returned.
+
+        check_assertion_error_type: bool
+            If True, when unpacking an AssertionError, the inner argument's type will be checked against types_list, and the inner error will be raised if it does not match.
+    """
+    type f = Callable[...,Any]
+    type g = Callable[..., Union[Any,*types_list]]
+    def return_caught_errors_decorator[F:f, G:g](func: F) -> G:
+        @wraps(func)
+        def _wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except types_list as E:
+                return E
+            except AssertionError as AE:
+                if unpack_assertion_error:
+                    print(AE, AE.args,type(AE.args), type(AE.args[0]))
+                    inner_error = AE.args[0]
+                    if not check_assertion_error_type:
+                        return inner_error
+                    if isinstance(inner_error, tuple(types_list)):
+                        return inner_error
+                    raise inner_error
+                raise AE
+        return _wrapper
+    return return_caught_errors_decorator
+        
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -31,7 +74,7 @@ class RawDataSubsetter:
     # identifies the RawData type the class is associated with
     RDT: ClassVar[Type[RawData]] 
 
-    def subset(self, raw_data: RawData) -> Optional[RawData]:
+    def subset(self, raw_data: RawData) -> Result[RawData, LoadingError]:
         raise NotImplementedError(f"{type(self)} does not implement subset method")
 
 
@@ -65,11 +108,11 @@ class RawData:
         raise AssertionError(f"Type {type(self)} does not implement .assert_on_creation()")
 
     @classmethod
-    def from_qualified_file(cls, fpath: str) -> Optional[Self]:
+    def from_qualified_file(cls, fpath: str) -> Result[Self, LoadingError]:
         raise NotImplementedError(f"Type {cls} does not implement .from_qualfied_file(cls, fpath: str)")
 
     @classmethod
-    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Optional[Self]:
+    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Result[Self, LoadingError]:
         raise NotImplementedError(f"Type {cls} does not implement .from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters)")
 
     def perform_qc(self) -> Self:
@@ -107,7 +150,7 @@ class JointParameters(UserDict):
     RAW_DATA_TYPES: tuple[RawData]
 
     def __init__(self, data: dict[Type[RawData], RawDataSubsetter]):
-        assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys contain different RawData types to {self.RawDataTypes}"
+        assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys={list(data.keys())} contain different RawData types to {self.RawDataTypes}"
         for RDT, params in data.items():
             if isinstance(params, RawDataSubsetter):
                 assert params.RDT == RDT, ValueError(f"For key={RDT} in data, {params.RDT=} does not match.")
@@ -128,7 +171,8 @@ class CollocationEvent(UserDict):
     @property
     def events(self): return self.data
 
-    def load_with_joint_parameters(self, joint_params: JointParameters) -> Optional[CollocatedRawData]:
+    @return_caught_errors(ValueError, TypeError, LoadingErrors)
+    def load_with_joint_parameters(self, joint_params: JointParameters) -> Result[CollocatedRawData, LoadingError]:
         raw_datas = {
             RDT: RDT.from_collocation_event_and_parameters(
                 event = event,
@@ -151,7 +195,9 @@ class CollocatedRawData(UserDict):
             assert isinstance(raw_data, RDT), TypeError(f"Data supplied for key {RDT} is of type {type(raw_data)}, should be a subclass of {RDT}.")
         super().__init__(data)
 
-    def subset(self, joint_parameters: JointParameters) -> Optional[Self]:
+    #TODO: determine what errors should be passed through
+    @return_caught_errors()
+    def subset(self, joint_parameters: JointParameters) -> Result[Self, LoadingError]:
         # TODO: Raw Data Type checks on the JointParameters and Self
         subset_raw_data = {
             RDT: (
