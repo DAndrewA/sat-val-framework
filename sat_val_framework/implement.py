@@ -18,7 +18,6 @@ import pickle
 class InvalidSubsetError(ValueError):
     pass
 type LoadingErrors = FileNotFoundError | InvalidSubsetError
-type Result = Union
 
 
 def return_caught_errors(*types_list: list[Type], unpack_assertion_error: bool = True, check_assertion_error_type: bool=True):
@@ -74,7 +73,7 @@ class RawDataSubsetter:
     # identifies the RawData type the class is associated with
     RDT: ClassVar[Type[RawData]] 
 
-    def subset(self, raw_data: RawData) -> Result[RawData, LoadingError]:
+    def subset(self, raw_data: RawData) -> Optional[RawData]:
         raise NotImplementedError(f"{type(self)} does not implement subset method")
 
 
@@ -108,11 +107,11 @@ class RawData:
         raise AssertionError(f"Type {type(self)} does not implement .assert_on_creation()")
 
     @classmethod
-    def from_qualified_file(cls, fpath: str) -> Result[Self, LoadingError]:
+    def from_qualified_file(cls, fpath: str) -> Optional[Self]:
         raise NotImplementedError(f"Type {cls} does not implement .from_qualfied_file(cls, fpath: str)")
 
     @classmethod
-    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Result[Self, LoadingError]:
+    def from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters) -> Optional[Self]:
         raise NotImplementedError(f"Type {cls} does not implement .from_collocation_event_and_parameters(cls, event: RawDataEvent, parameters: CollocationParameters)")
 
     def perform_qc(self) -> Self:
@@ -171,8 +170,7 @@ class CollocationEvent(UserDict):
     @property
     def events(self): return self.data
 
-    @return_caught_errors(ValueError, TypeError, LoadingErrors)
-    def load_with_joint_parameters(self, joint_params: JointParameters) -> Result[CollocatedRawData, LoadingError]:
+    def load_with_joint_parameters(self, joint_params: JointParameters) -> Optional[CollocatedRawData]:
         raw_datas = {
             RDT: RDT.from_collocation_event_and_parameters(
                 event = event,
@@ -196,8 +194,7 @@ class CollocatedRawData(UserDict):
         super().__init__(data)
 
     #TODO: determine what errors should be passed through
-    @return_caught_errors()
-    def subset(self, joint_parameters: JointParameters) -> Result[Self, LoadingError]:
+    def subset(self, joint_parameters: JointParameters) -> Optional[Self]:
         # TODO: Raw Data Type checks on the JointParameters and Self
         subset_raw_data = {
             RDT: (
