@@ -156,7 +156,7 @@ class JointParameters(UserDict):
                 
         for RDT, params in data.items():
             if isinstance(params, RawDataSubsetter):
-                assert issubclass(params.RDT, RDT), ValueError(f"For key={RDT} in data, {params.RDT=} does not match.")
+                assert issubclass(RDT, params.RDT), ValueError(f"For key={RDT} in data, {params.RDT=} does not match.")
             else:
                 assert params is None, ValueError(f"For key={RDT} in data, params must be of type None or {RawDataSubsetter} with correctly set RDT field.")
         super().__init__(data)
