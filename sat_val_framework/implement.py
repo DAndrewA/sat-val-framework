@@ -149,7 +149,11 @@ class JointParameters(UserDict):
     RAW_DATA_TYPES: tuple[RawData]
 
     def __init__(self, data: dict[Type[RawData], RawDataSubsetter]):
-        assert set(self.RAW_DATA_TYPES) == set(data.keys()), f"data keys={list(data.keys())} contain different RawData types to {self.RawDataTypes}"
+        for RDT in data.keys():
+            if issubclass(RDT, self.RAW_DATA_TYPES):
+                continue
+            raise AssertionError(KeyError("data key {data_RDT} is not found in {self.RAW_DATA_TYPES=}"))
+                
         for RDT, params in data.items():
             if isinstance(params, RawDataSubsetter):
                 assert params.RDT == RDT, ValueError(f"For key={RDT} in data, {params.RDT=} does not match.")
